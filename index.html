@@ -2,169 +2,100 @@
 <html lang="id">
 <head>
 <meta charset="utf-8">
-<title>Klasifikasi Sentimen (Machine Learning)</title>
-
-<!-- Chart.js untuk Pie Chart -->
+<title>Klasifikasi Sentimen (Tanpa Backend)</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
 <style>
-    body {
-        font-family: "Poppins", Arial;
-        background: #0a0f24;
-        color: #e3e3e3;
-        margin: 0;
-        padding: 30px;
-    }
-
-    .container {
-        max-width: 900px;
-        margin: auto;
-        background: rgba(255,255,255,0.05);
-        padding: 25px;
-        border-radius: 16px;
-        box-shadow: 0 0 25px rgba(0,0,0,0.6);
-        backdrop-filter: blur(8px);
-    }
-
-    h2 {
-        text-align: center;
-        color: #7cb8ff;
-        margin-top: 0;
-        text-shadow: 0 0 10px #004dff;
-    }
-
-    textarea {
-        width: 100%;
-        height: 130px;
-        padding: 15px;
-        font-size: 15px;
-        background: #11182f;
-        border: 1px solid #2d3d66;
-        border-radius: 10px;
-        color: white;
-        resize: none;
-        transition: 0.25s;
-    }
-    textarea:focus {
-        border-color: #4da3ff;
-        box-shadow: 0 0 12px #1e90ff;
-    }
-
-    button {
-        width: 100%;
-        padding: 12px;
-        background: linear-gradient(45deg, #004dff, #0084ff);
-        border: none;
-        color: white;
-        border-radius: 10px;
-        margin-top: 15px;
-        cursor: pointer;
-        font-size: 16px;
-        transition: 0.2s;
-    }
-    button:hover {
-        transform: scale(1.03);
-        box-shadow: 0 0 12px #007bff;
-    }
-
-    .result-box {
-        margin-top: 20px;
-        padding: 15px;
-        background: #11182f;
-        border-left: 5px solid #4da3ff;
-        border-radius: 10px;
-        display: none;
-    }
-
-    table {
-        width: 100%;
-        margin-top: 20px;
-        border-collapse: collapse;
-        background: #11182f;
-    }
-    th, td {
-        padding: 10px;
-        border: 1px solid #2d3d66;
-        font-size: 14px;
-    }
-    th {
-        background: #0f1a3a;
-        color: #7cb8ff;
-    }
+ body {font-family: Poppins, Arial; background:#0a0f24; color:#e3e3e3; padding:30px;}
+ .container {max-width:900px; margin:auto; background:rgba(255,255,255,0.05); padding:25px; border-radius:16px;}
+ textarea {width:100%; height:130px; padding:15px; background:#11182f; color:#fff; border-radius:10px;}
+ button {width:100%; padding:12px; margin-top:15px; border-radius:10px; background:linear-gradient(45deg,#004dff,#0084ff); color:white; cursor:pointer;}
+ table {width:100%; margin-top:20px; border-collapse:collapse; background:#11182f;}
+ th,td {padding:10px; border:1px solid #2d3d66;}
+ th {background:#0f1a3a; color:#7cb8ff;}
+ .result-box {margin-top:20px; padding:15px; background:#11182f; border-left:5px solid #4da3ff; border-radius:10px; display:none;}
 </style>
-
 </head>
 <body>
-
 <div class="container">
+ <h2>🔮 Sistem Klasifikasi Sentimen (Tanpa Backend)</h2>
 
-    <h2>🔮 Sistem Klasifikasi Sentimen (ML)</h2>
+ <label><b>Tulis Review Pelanggan:</b></label>
+ <textarea id="review" placeholder="Contoh: Produk ini sangat bagus..."></textarea>
 
-    <label><b>Tulis Review Pelanggan:</b></label>
-    <textarea id="review" placeholder="Contoh: Produk ini sangat bagus..."></textarea>
+ <button id="btn">Klasifikasikan</button>
 
-    <button id="btn">Klasifikasikan</button>
+ <div id="result" class="result-box">
+   <b>Sentimen:</b> <span id="sentimen"></span><br>
+   <b>Confidence:</b> <span id="confidence"></span>
+ </div>
 
-    <div id="result" class="result-box">
-        <b>Sentimen:</b> <span id="sentimen"></span><br>
-        <b>Confidence:</b> <span id="confidence"></span>
-    </div>
+ <h3 style="margin-top:30px;">📌 Riwayat Klasifikasi</h3>
+ <table id="historyTable">
+  <tr>
+   <th>ID</th>
+   <th>Review</th>
+   <th>Sentimen</th>
+   <th>Confidence</th>
+   <th>Waktu</th>
+  </tr>
+ </table>
 
-    <h3 style="margin-top:30px;">📌 Riwayat Klasifikasi</h3>
-    <table id="historyTable">
-        <tr>
-            <th>ID</th>
-            <th>Review</th>
-            <th>Sentimen</th>
-            <th>Confidence</th>
-            <th>Waktu</th>
-        </tr>
-    </table>
-
-    <h3 style="margin-top:30px;">📊 Statistik Sentimen</h3>
-    <canvas id="sentimentChart" height="150"></canvas>
-
+ <h3 style="margin-top:30px;">📊 Statistik Sentimen</h3>
+ <canvas id="sentimentChart" height="150"></canvas>
 </div>
 
 <script>
-document.getElementById("btn").onclick = async () => {
+// Lexicon sederhana
+const positiveWords = ["bagus", "mantap", "hebat", "luar biasa", "keren", "puas", "suka", "recommended", "terbaik"];
+const negativeWords = ["buruk", "jelek", "parah", "mengecewakan", "benci", "tidak puas", "sampah", "fatal", "lemah"];
+
+let history = [];
+
+// Fungsi klasifikasi lokal
+function classifyText(text) {
+    text = text.toLowerCase();
+    let score = 0;
+
+    positiveWords.forEach(w => { if (text.includes(w)) score++; });
+    negativeWords.forEach(w => { if (text.includes(w)) score--; });
+
+    let sentimen = "Netral";
+    if (score > 0) sentimen = "Positif";
+    else if (score < 0) sentimen = "Negatif";
+
+    let confidence = Math.min(Math.abs(score) / 3, 1);
+
+    return { sentimen, confidence };
+}
+
+// Tombol proses
+
+document.getElementById("btn").onclick = () => {
     let review = document.getElementById("review").value.trim();
     let resultBox = document.getElementById("result");
 
-    if (review.length < 5){
-        alert("Review minimal 5 karakter.");
-        return;
-    }
+    if (review.length < 5) return alert("Review minimal 5 karakter.");
+
+    const { sentimen, confidence } = classifyText(review);
 
     resultBox.style.display = "block";
-    document.getElementById("sentimen").innerHTML = "Memproses...";
-    document.getElementById("confidence").innerHTML = "...";
+    document.getElementById("sentimen").innerHTML = sentimen;
+    document.getElementById("confidence").innerHTML = (confidence * 100).toFixed(1) + "%";
 
-    try {
-        const res = await fetch("http://localhost:5000/predict", {
-            method: "POST",
-            headers: {"Content-Type": "application/json"},
-            body: JSON.stringify({ review })
-        });
+    // Simpan ke riwayat
+    history.push({
+        id: history.length + 1,
+        review,
+        sentimen,
+        confidence,
+        timestamp: new Date().toLocaleString()
+    });
 
-        const data = await res.json();
-
-        document.getElementById("sentimen").innerHTML = data.sentimen;
-        document.getElementById("confidence").innerHTML = (data.confidence * 100).toFixed(1) + "%";
-
-        loadHistory();
-        loadChart();
-
-    } catch (err) {
-        document.getElementById("sentimen").innerHTML = "Tidak bisa terhubung ke server.";
-        document.getElementById("confidence").innerHTML = "-";
-    }
+    loadHistory();
+    loadChart();
 };
 
-async function loadHistory() {
-    const res = await fetch("http://localhost:5000/history");
-    const data = await res.json();
-
+function loadHistory() {
     let table = document.getElementById("historyTable");
     table.innerHTML = `
         <tr>
@@ -173,36 +104,30 @@ async function loadHistory() {
             <th>Sentimen</th>
             <th>Confidence</th>
             <th>Waktu</th>
-        </tr>
-    `;
+        </tr>`;
 
-    data.forEach(r => {
+    history.forEach(r => {
         table.innerHTML += `
-            <tr>
-                <td>${r.id}</td>
-                <td>${r.review}</td>
-                <td>${r.sentimen}</td>
-                <td>${(r.confidence * 100).toFixed(1)}%</td>
-                <td>${r.timestamp}</td>
-            </tr>
-        `;
+        <tr>
+            <td>${r.id}</td>
+            <td>${r.review}</td>
+            <td>${r.sentimen}</td>
+            <td>${(r.confidence * 100).toFixed(1)}%</td>
+            <td>${r.timestamp}</td>
+        </tr>`;
     });
 }
 
-async function loadChart() {
-    const res = await fetch("http://localhost:5000/history");
-    const data = await res.json();
+let chart;
+function loadChart() {
+    let pos = history.filter(h => h.sentimen === "Positif").length;
+    let neg = history.filter(h => h.sentimen === "Negatif").length;
+    let neu = history.filter(h => h.sentimen === "Netral").length;
 
-    let pos = 0, neg = 0, neu = 0;
+    if (chart) chart.destroy();
 
-    data.forEach(r => {
-        if (r.sentimen === "Positif") pos++;
-        else if (r.sentimen === "Negatif") neg++;
-        else neu++;
-    });
-
-    new Chart(document.getElementById("sentimentChart"), {
-        type: 'pie',
+    chart = new Chart(document.getElementById("sentimentChart"), {
+        type: "pie",
         data: {
             labels: ["Positif", "Negatif", "Netral"],
             datasets: [{
@@ -212,10 +137,6 @@ async function loadChart() {
         }
     });
 }
-
-loadHistory();
-loadChart();
 </script>
-
 </body>
 </html>
